@@ -1,14 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-MedSegDiff · Demostración de segmentación (versión simple para Streamlit Cloud)
 
-Sube una imagen médica y la app genera una máscara de segmentación.
-DEMOSTRACIÓN EDUCATIVA: usa procesamiento de imagen clásico (umbral de Otsu),
-NO un modelo entrenado ni diagnóstico médico.
-
-Despliegue: sube este repo a GitHub y conéctalo en https://streamlit.io/cloud
-(archivo principal: streamlit_app.py).
-"""
 import io
 import numpy as np
 from PIL import Image, ImageFilter
@@ -58,7 +49,7 @@ def overlay(gray, mask, alpha=0.45):
 
 # ----------------------------- Interfaz ----------------------------------- #
 st.set_page_config(page_title="MedSegDiff · Demostración", page_icon="🧠")
-st.title("🧠 MedSegDiff · Demostración de segmentación")
+st.title(" MedSegDiff · Demostración de segmentación")
 st.error("Demostración educativa: NO usa un modelo entrenado ni hace "
          "diagnóstico médico. La región se calcula por intensidad de imagen.")
 
