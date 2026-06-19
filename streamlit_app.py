@@ -50,8 +50,7 @@ def overlay(gray, mask, alpha=0.45):
 # ----------------------------- Interfaz ----------------------------------- #
 st.set_page_config(page_title="MedSegDiff · Demostración", page_icon="🧠")
 st.title(" MedSegDiff · Demostración de segmentación")
-st.error("Demostración educativa: NO usa un modelo entrenado ni hace "
-         "diagnóstico médico. La región se calcula por intensidad de imagen.")
+
 
 with st.sidebar:
     target_dark = st.radio("Región de interés",
