@@ -1,15 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Entrena la U-Net de DEMOSTRACIÓN con datos sintéticos y guarda model_demo.pt.
 
-Los datos son artificiales (una "anatomía" gris + una "lesión" brillante
-irregular + ruido). El objetivo NO es precisión clínica, sino tener pesos
-reales para que la app de Streamlit haga inferencia con PyTorch y segmente
-regiones brillantes prominentes. Reemplaza estos pesos por los tuyos si tienes
-un modelo entrenado de verdad.
-
-Uso:  python train_demo.py
-"""
 import math
 import numpy as np
 import torch
