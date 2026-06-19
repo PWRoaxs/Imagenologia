@@ -1,17 +1,32 @@
+# -*- coding: utf-8 -*-
+"""
+MedSegDiff · Segmentación con PyTorch (app educativa para Streamlit Cloud)
+
+Sube una imagen médica → una U-Net de PyTorch produce una máscara de
+segmentación. Trae pesos de DEMOSTRACIÓN entrenados con datos sintéticos
+(segmentan regiones brillantes prominentes). Puedes subir tus propios pesos
+(.pt/.pth) para reemplazarlos.
+
+⚠️  DEMOSTRACIÓN EDUCATIVA — no es un dispositivo médico ni hace diagnóstico.
+
+Despliegue: sube el repo a GitHub y conéctalo en https://streamlit.io/cloud
+(archivo principal: streamlit_app.py). Incluye model.py, model_demo.pt y
+requirements.txt en la raíz.
+"""
 import io
 import os
 import numpy as np
 from PIL import Image
 import torch
 import streamlit as st
- 
+
 from model import UNet
- 
+
 DEVICE = "cpu"
 MASK_COLOR = (255, 107, 129)
 DEFAULT_WEIGHTS = "model_demo.pt"
- 
- 
+
+
 # --------------------------------------------------------------------------- #
 #  Carga del modelo (PyTorch)                                                  #
 # --------------------------------------------------------------------------- #
@@ -25,25 +40,25 @@ def _extract_state_dict(ckpt):
         if all(torch.is_tensor(v) for v in ckpt.values()):
             return ckpt, {}
     return ckpt, {}
- 
- 
+
+
 def _clean_keys(sd):
     """Quita prefijos comunes como 'module.' (de DataParallel)."""
     out = {}
     for k, v in sd.items():
         out[k[7:] if k.startswith("module.") else k] = v
     return out
- 
- 
+
+
 @st.cache_resource(show_spinner=False)
 def load_model(weights_bytes: bytes | None, in_ch: int, base: int):
     """Construye la U-Net y carga pesos.
- 
+
     weights_bytes=None → usa el archivo DEFAULT_WEIGHTS si existe.
     Devuelve (modelo, info_str).
     """
     net = UNet(in_ch=in_ch, out_ch=1, base=base).to(DEVICE)
- 
+
     raw = None
     source = None
     if weights_bytes is not None:
@@ -51,11 +66,11 @@ def load_model(weights_bytes: bytes | None, in_ch: int, base: int):
     elif os.path.exists(DEFAULT_WEIGHTS):
         with open(DEFAULT_WEIGHTS, "rb") as f:
             raw, source = f.read(), f"pesos incluidos ({DEFAULT_WEIGHTS})"
- 
+
     if raw is None:
         net.eval()
         return net, "⚠️ Sin pesos: la red está SIN entrenar y la salida no tiene sentido."
- 
+
     # PyTorch ≥ 2.6 usa weights_only=True por defecto y falla con checkpoints
     # que guardan objetos no-tensor (el error 'Weights only load failed' /
     # 'Unsupported operand 60' de la consola). Para un archivo de CONFIANZA:
@@ -64,15 +79,15 @@ def load_model(weights_bytes: bytes | None, in_ch: int, base: int):
     sd = _clean_keys(sd)
     result = net.load_state_dict(sd, strict=False)
     net.eval()
- 
+
     info = f"Modelo cargado desde {source}."
     if result.missing_keys or result.unexpected_keys:
         info += (f" Coincidencia parcial: {len(result.missing_keys)} claves "
                  f"faltantes, {len(result.unexpected_keys)} inesperadas "
                  "(¿la arquitectura no coincide con tu checkpoint?).")
     return net, info
- 
- 
+
+
 # --------------------------------------------------------------------------- #
 #  Pre/post-proceso e inferencia                                               #
 # --------------------------------------------------------------------------- #
@@ -86,15 +101,15 @@ def preprocess(image: Image.Image, size: int, in_ch: int):
     else:
         arr = arr.transpose(2, 0, 1)[None, ...]   # [1,3,H,W]
     return torch.from_numpy(arr), img.convert("L")
- 
- 
+
+
 @torch.no_grad()
 def infer(net, x, threshold: float):
     prob = torch.sigmoid(net(x.to(DEVICE)))[0, 0].cpu().numpy()
     mask = prob > threshold
     return prob, mask
- 
- 
+
+
 def overlay(gray: Image.Image, mask: np.ndarray, alpha: float = 0.45) -> Image.Image:
     base = np.asarray(gray.convert("RGB")).astype(np.float32)
     if mask.shape != base.shape[:2]:
@@ -102,12 +117,12 @@ def overlay(gray: Image.Image, mask: np.ndarray, alpha: float = 0.45) -> Image.I
                           .resize((base.shape[1], base.shape[0]))) > 127
     base[mask] = base[mask] * (1 - alpha) + np.array(MASK_COLOR) * alpha
     return Image.fromarray(base.astype(np.uint8))
- 
- 
+
+
 def mask_to_image(mask: np.ndarray) -> Image.Image:
     return Image.fromarray((mask[..., None] * np.array(MASK_COLOR)).astype(np.uint8))
- 
- 
+
+
 # --------------------------------------------------------------------------- #
 #  Interfaz                                                                    #
 # --------------------------------------------------------------------------- #
@@ -117,7 +132,7 @@ st.caption("U-Net de PyTorch · herramienta educativa para estudiantes.")
 st.error("**Demostración educativa.** No es un dispositivo médico ni hace "
          "diagnóstico. Los pesos incluidos se entrenaron con datos sintéticos; "
          "reemplázalos por un modelo real para resultados clínicamente útiles.")
- 
+
 with st.sidebar:
     st.header("Parámetros")
     in_ch = 1 if st.radio("Canales de entrada", ["1 (gris)", "3 (RGB)"]) == "1 (gris)" else 3
@@ -129,41 +144,41 @@ with st.sidebar:
     st.caption("Pesos del modelo (.pt / .pth)")
     wfile = st.file_uploader("Subir pesos propios (opcional)", type=["pt", "pth"])
     st.caption(f"Versión de PyTorch: {torch.__version__}")
- 
+
 weights_bytes = wfile.read() if wfile is not None else None
- 
+
 try:
     model, info = load_model(weights_bytes, in_ch, base)
     (st.success if "Sin pesos" not in info else st.warning)(info)
 except Exception as e:
     st.exception(e)
     st.stop()
- 
+
 st.subheader("1 · Sube una imagen")
 upload = st.file_uploader("Imagen médica (PNG / JPG)", type=["png", "jpg", "jpeg"])
- 
+
 if upload is None:
     st.info("Esperando imagen…")
     st.stop()
- 
+
 image = Image.open(io.BytesIO(upload.read()))
 image.load()
- 
+
 if not st.button("▶ Ejecutar segmentación", type="primary", use_container_width=True):
     st.image(image, caption="Vista previa", width=360)
     st.stop()
- 
+
 with st.spinner("Inferencia con PyTorch…"):
     x, gray = preprocess(image, size, in_ch)
     prob, mask = infer(model, x, threshold)
- 
+
 st.subheader("2 · Resultado")
 c1, c2, c3, c4 = st.columns(4)
 c1.image(gray, caption="Entrada", use_container_width=True)
 c2.image((prob * 255).astype(np.uint8), caption="Probabilidad", use_container_width=True)
 c3.image(mask_to_image(mask), caption="Máscara", use_container_width=True)
 c4.image(overlay(gray, mask), caption="Overlay", use_container_width=True)
- 
+
 st.metric("Región segmentada", f"{round(100 * mask.mean(), 2)} %")
 st.caption("La máscara proviene de una U-Net; con los pesos de demostración "
            "resalta regiones brillantes prominentes, no detecta enfermedades.")

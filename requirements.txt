@@ -1,0 +1,6 @@
+# PyTorch en versión CPU (mucho más liviana; necesaria para el tier gratuito)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+streamlit
+numpy
+pillow
