@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-"""U-Net de segmentación en PyTorch (binaria). Usada por la app y el script
-de entrenamiento; mantener idéntica para que coincidan las claves del
-state_dict."""
+
 import torch
 import torch.nn as nn
 
