@@ -1,18 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-MedSegDiff · Segmentación con PyTorch (app educativa para Streamlit Cloud)
 
-Sube una imagen médica → una U-Net de PyTorch produce una máscara de
-segmentación. Trae pesos de DEMOSTRACIÓN entrenados con datos sintéticos
-(segmentan regiones brillantes prominentes). Puedes subir tus propios pesos
-(.pt/.pth) para reemplazarlos.
-
-⚠️  DEMOSTRACIÓN EDUCATIVA — no es un dispositivo médico ni hace diagnóstico.
-
-Despliegue: sube el repo a GitHub y conéctalo en https://streamlit.io/cloud
-(archivo principal: streamlit_app.py). Incluye model.py, model_demo.pt y
-requirements.txt en la raíz.
-"""
 import io
 import os
 import numpy as np
@@ -71,9 +58,6 @@ def load_model(weights_bytes: bytes | None, in_ch: int, base: int):
         net.eval()
         return net, "⚠️ Sin pesos: la red está SIN entrenar y la salida no tiene sentido."
 
-    # PyTorch ≥ 2.6 usa weights_only=True por defecto y falla con checkpoints
-    # que guardan objetos no-tensor (el error 'Weights only load failed' /
-    # 'Unsupported operand 60' de la consola). Para un archivo de CONFIANZA:
     ckpt = torch.load(io.BytesIO(raw), map_location=DEVICE, weights_only=False)
     sd, _ = _extract_state_dict(ckpt)
     sd = _clean_keys(sd)
@@ -88,9 +72,7 @@ def load_model(weights_bytes: bytes | None, in_ch: int, base: int):
     return net, info
 
 
-# --------------------------------------------------------------------------- #
-#  Pre/post-proceso e inferencia                                               #
-# --------------------------------------------------------------------------- #
+
 def preprocess(image: Image.Image, size: int, in_ch: int):
     size = (size // 8) * 8  # múltiplo de 8 para la U-Net
     mode = "L" if in_ch == 1 else "RGB"
@@ -123,11 +105,11 @@ def mask_to_image(mask: np.ndarray) -> Image.Image:
     return Image.fromarray((mask[..., None] * np.array(MASK_COLOR)).astype(np.uint8))
 
 
-# --------------------------------------------------------------------------- #
+
 #  Interfaz                                                                    #
 # --------------------------------------------------------------------------- #
 st.set_page_config(page_title="MedSegDiff · PyTorch", page_icon="🧠", layout="wide")
-st.title("🧠 MedSegDiff · Segmentación con PyTorch")
+st.title(" MedSegDiff · Segmentación con PyTorch")
 st.caption("U-Net de PyTorch · herramienta educativa para estudiantes.")
 st.error("**Demostración educativa.** No es un dispositivo médico ni hace "
          "diagnóstico. Los pesos incluidos se entrenaron con datos sintéticos; "
